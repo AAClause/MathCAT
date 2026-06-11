@@ -31,6 +31,7 @@ pub use shim_filesystem::ZIPPED_RULE_FILES;
 mod canonicalize;
 mod infer_intent;
 pub mod speech;
+mod braille_markers;
 mod braille;
 mod navigate;
 mod prefs;

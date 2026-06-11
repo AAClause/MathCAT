@@ -9,11 +9,11 @@
       replace:
       - test:
           if: "@data-previous-space-width >= 0.7"
-          then: [t: "\\𝐰"]
+          then: [t: "\\"]
       - x: "."
       - test:
           if: "@data-following-space-width >= 0.7"
-          then: [t: "\\𝐰"]
+          then: [t: "\\"]
 
 -
   name: unicode-override
@@ -48,7 +48,7 @@
   tag: mfrac
   match: "."
   replace:
-  - t: "𝐖"
+  - t: ""
   - test:
       # ASCIIMath treats dx, dy, dz, and dt specially and doesn't require grouping
       if: "*[1][self::m:mi or (self::m:mn and not(contains(., '., '))) or
@@ -67,7 +67,7 @@
       - t: "("
       - x: "*[2]"
       - t: ")"
-  - t: "𝐖"
+  - t: ""
 
 -
   name: binomial-frac
@@ -77,7 +77,7 @@
   # ASCIIMath doesn't really support this -- done as a two row vector
   - t: "(("
   - x: "*[2]/*[1]"
-  - t: "),𝐖("
+  - t: "),("
   - x: "*[2]/*[2]"
   - t: "))"
 
@@ -105,7 +105,7 @@
   - t: "]"
   - test: 
       if: "following-sibling::*"
-      then: [t: ",𝐖"]
+      then: [t: ","]
 
 -
   name: default
@@ -115,13 +115,13 @@
   - x: "*"
   - test:
       if: "following-sibling::*"
-      then: [t: ",𝐖"]
+      then: [t: ","]
 
 -
   name: no-content
   tag: math
   match: "not(*)"      # empty
-  replace: [t: "𝐖"]    # not sure that is right, but this shouldn't happen
+  replace: [t: ""]    # not sure that is right, but this shouldn't happen
 
 -
   name: default
@@ -136,13 +136,13 @@
   tag: mrow
   match: "IsBracketed(., '∥', '∥')"
   replace: 
-  - t: "𝐖norm"
+  - t: "norm"
   - test:
       if: "*[2][IsNode(., 'leaf') and string-length(.) = 1]"
       then:
-      - t: "𝐖"
+      - t: ""
       - x: "*[2]"
-      - t: "𝐖"
+      - t: ""
       else:
       - t: "("
       - x: "*[2]"
@@ -153,7 +153,7 @@
   name: empty-mrow
   tag: mrow
   match: "not(*)"
-  replace: [t: "𝐖"] # not sure what is correct -- if in a fraction, probably something is better than nothing
+  replace: [t: ""] # not sure what is correct -- if in a fraction, probably something is better than nothing
 
 -
   name: default
@@ -169,11 +169,11 @@
   replace:
   - test:
       if: "parent::m:mrow and IsInDefinition(., 'Braille', 'AddSpacing') and not(ancestor::*[IsNode(., '2D')])"
-      then: [t: "𝐰"]    # never removed
+      then: [t: ""]    # never removed
   - x: "text()"
   - test:
       if: "parent::m:mrow and (IsInDefinition(., 'Braille', 'AddSpacing') or  .=',' or .=';') and not(ancestor::*[IsNode(., '2D')])"     # are there others???
-      then: [t: "𝐰"]    # never removed
+      then: [t: ""]    # never removed
 
 
 -
@@ -191,9 +191,9 @@
   replace:
   - test:
       if: "preceding-sibling::*[1][self::m:mi]"
-      then: [t: "𝐖"]
+      then: [t: ""]
   - x: "text()"
-  - t: "𝐖"
+  - t: ""
     
 -
   name: default
@@ -229,7 +229,7 @@
   -    "*[1][substring(., 1, 1)='↽'] and"
   -    "*[2][substring(., string-length(), 1)='⇀']"
   replace:
-  - t: "𝐖"
+  - t: ""
   - test:
       if: "*[1][self::m:mrow]"
       then_test:
@@ -237,21 +237,21 @@
           then: [t: "🣒"]    # this is currently unassigned and may get used by UTC at some point (<=>)
           else: [t: "🣔"]    # this is currently unassigned and may get used by UTC at some point (<<=>)
       else: [t: "🣓"]        # this is currently unassigned and may get used by UTC at some point (<==>>)
-  - t: "𝐖"
+  - t: ""
 
 -
   name: "accents"
   tag: mover
   match: "*[2][IsInDefinition(., 'Braille', 'Accents')]"
   replace:
-  - t: "𝐖"
+  - t: ""
   - x: "DefinitionValue(*[2], 'Braille', 'Accents')"
   - test:
       if: "*[1][IsNode(., 'leaf') and string-length(.) = 1]"
       then:
-      - t: "𝐖"
+      - t: ""
       - x: "*[1]"
-      - t: "𝐖"
+      - t: ""
       else:
       - t: "("
       - x: "*[1]"
@@ -262,14 +262,14 @@
   tag: munder
   match: "*[2][IsInDefinition(., 'Braille', 'UnderAccents')]"
   replace:
-  - t: "𝐖"
+  - t: ""
   - x: "DefinitionValue(*[2], 'Braille', 'UnderAccents')"
   - test:
       if: "*[1][IsNode(., 'leaf') and string-length(.) = 1]"
       then:
-      - t: "𝐖"
+      - t: ""
       - x: "*[1]"
-      - t: "𝐖"
+      - t: ""
       else:
       - t: "("
       - x: "*[1]"
@@ -289,7 +289,7 @@
       if: "*[3][IsNode(., 'leaf') and string-length(.) = 1]"
       then:
       - x: "*[3]"
-      - t: "𝐖"    # need to separate script from what follows
+      - t: ""    # need to separate script from what follows
       else:
       - t: "("
       - x: "*[3]"
@@ -308,7 +308,7 @@
       if: "*[2][IsNode(., 'leaf') and string-length(.) = 1]"
       then:
       - x: "*[2]"
-      - t: "𝐖"    # need to separate script from what follows
+      - t: ""    # need to separate script from what follows
       else:
       - t: "("
       - x: "*[2]"
@@ -338,7 +338,7 @@
       - x: "*[2]"
       - test:
           if: "not(self::m:msubsup)"
-          then: [t: "𝐖"]    # need to separate script from what follows]
+          then: [t: ""]    # need to separate script from what follows]
       else:
       - t: "("
       - x: "*[2]"
@@ -351,7 +351,7 @@
           if: "*[3][IsNode(., 'leaf') and string-length(.) = 1]"
           then:
           - x: "*[3]"
-          - t: "𝐖"    # need to separate script from what follows
+          - t: ""    # need to separate script from what follows
           else:
           - t: "("
           - x: "*[3]"
@@ -386,7 +386,7 @@
           if: "*[3][IsNode(., 'leaf') and string-length(.) = 1]"
           then:
           - x: "*[3]"
-          - t: "𝐖"    # need to separate script from what follows
+          - t: ""    # need to separate script from what follows
           else:
           - t: "("
           - x: "*[3]"
@@ -425,7 +425,7 @@
   - test:
       if: "$Prescripts"
       then:
-      - t: "\\𝐰"        # empty base not needed if this is the only expr
+      - t: "\\"        # empty base not needed if this is the only expr
       - test:
           if: "not($Prescripts[1][self::m:none])"
           then_test:
@@ -447,7 +447,7 @@
       - test:
           if: "count($Prescripts)>2"
           then:
-          - t: "\\𝐰"        # empty base not needed if this is the only expr
+          - t: "\\"        # empty base not needed if this is the only expr
           - test:
               if: "not($Prescripts[3][self::m:none])"
               then_test:
@@ -468,7 +468,7 @@
                   - t: ")"
           - test:
               if: "count($Prescripts) > 4"   # give up and just dump them out so at least the content is there
-              then: [t: "\\𝐰", x: "$Prescripts[position() > 4]"]
+              then: [t: "\\", x: "$Prescripts[position() > 4]"]
 
   - x: "*[1]"
   - test:
@@ -559,7 +559,7 @@
                       if: "count($Postscripts) > 8"   # give up and just dump them out so at least the content is there
                       then:
                       - x: "$Postscripts[position() > 8]"
-  - t: "𝐰"    # need to separate script from what follows
+  - t: ""    # need to separate script from what follows
                 
 
 -

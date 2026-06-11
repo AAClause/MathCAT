@@ -94,13 +94,13 @@
   - "(IsBracketed(., '(', ')') or IsBracketed(., '[', ']') or"
   - " IsBracketed(., '|', '|') or IsBracketed(., '‖', '‖') or IsBracketed(., '{', '}') )"
   replace:
-  - t: "𝐖\\begin{"
+  - t: "\\begin{"
   - x: "string($MatrixType)"     # need to get $MatrixType eval'd so that it is converted to braille (doesn't work if I do it in 'variables') 
-  - t: "}𝐖"
+  - t: "}"
   - x: "*[2]"
-  - t: "𝐖\\end{"
+  - t: "\\end{"
   - x: "string($MatrixType)"     # need to get $MatrixType eval'd so that it is converted to braille (doesn't work if I do it in 'variables') 
-  - t: "}𝐖"
+  - t: "}"
 
 -
   name: default-mtable
@@ -124,7 +124,7 @@
   - x: "*"
   - test: 
       if: "following-sibling::*"
-      then: [t: "𝐖\\\\𝐖"]
+      then: [t: "\\\\"]
 
 -
   name: default
@@ -134,13 +134,13 @@
   - x: "*"
   - test:
       if: "following-sibling::*"
-      then: [t: "𝐖&𝐖"]
+      then: [t: "&"]
 
 -
   name: no-content
   tag: math
   match: "not(*)"      # empty
-  replace: [t: "𝐖"]    # not sure that is right, but this shouldn't happen
+  replace: [t: ""]    # not sure that is right, but this shouldn't happen
 
 -
   name: default
@@ -154,7 +154,7 @@
   name: empty-mrow
   tag: mrow
   match: "not(*)"
-  replace: [t: "𝐖"] # not sure what is correct -- if in a fraction, probably something is better than nothing
+  replace: [t: ""] # not sure what is correct -- if in a fraction, probably something is better than nothing
 
 -
   name: default
@@ -175,7 +175,7 @@
   - x: "text()"
   - test:
       if: "not(preceding-sibling::*)"
-      then: [t: "𝐖"]
+      then: [t: ""]
 
 -
   name: default
@@ -185,15 +185,15 @@
   replace:
   - test:
       # if: "parent::m:mrow and not(IsInDefinition(., 'Braille', 'NoSpacesBefore'))"
-      # then: [t: "𝐖"]
+      # then: [t: ""]
       if: "parent::m:mrow"
       then_test:
           if: "not(IsInDefinition(., 'Braille', 'NoSpacesBefore'))"
-          then: [t: "𝐖"]
+          then: [t: ""]
   - x: "text()"
   - test:
       if: "parent::m:mrow and (.=',' or .=';')"     # are there others???
-      then: [t: "𝐖"]
+      then: [t: ""]
 
 
 -
@@ -211,7 +211,7 @@
   replace:
   - t: "\\"
   - x: "text()"
-  - t: "𝐖"
+  - t: ""
     
 -
   # FIX: need to deal with all caps
@@ -241,7 +241,7 @@
   -    "*[1][substring(., 1, 1)='↽'] and"
   -    "*[2][substring(., string-length(), 1)='⇀']"
   replace:
-  - t: "𝐖"
+  - t: ""
   - test:
       if: "*[1][self::m:mrow]"
       then_test:
@@ -249,16 +249,16 @@
           then: [t: "🣒"]    # this is currently unassigned and may get used by UTC at some point (<=>)
           else: [t: "🣔"]    # this is currently unassigned and may get used by UTC at some point (<<=>)
       else: [t: "🣓"]        # this is currently unassigned and may get used by UTC at some point (<==>>)
-  - t: "𝐖"
+  - t: ""
 
 -
   name: "hat"
   tag: "mover"
   match: "*[2][.='^']"
   replace:
-  - t: "𝐖\\hat{"
+  - t: "\\hat{"
   - x: "*[1]"
-  - t: "}𝐖"
+  - t: "}"
 
 -
   name: "bar"
@@ -318,7 +318,7 @@
           - t: "{"
           - x: "*[3]"
           - t: "}"
-  - t: "𝐖"    # need to separate script from what follows
+  - t: ""    # need to separate script from what follows
 
 -
   name: "movable-limits"
@@ -348,7 +348,7 @@
           - t: "{"
           - x: "*[3]"
           - t: "}"
-  - t: "𝐖"    # need to separate script from what follows
+  - t: ""    # need to separate script from what follows
 
 -
   name: "default"
@@ -518,7 +518,7 @@
                       if: "count($Postscripts) > 8"   # give up and just dump them out so at least the content is there
                       then:
                       - x: "$Postscripts[position() > 8]"
-  - t: "𝐖"    # need to separate script from what follows
+  - t: ""    # need to separate script from what follows
                 
 
 -

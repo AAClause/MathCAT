@@ -14,6 +14,7 @@ use sxd_xpath::{Factory, Value, XPath};
 use sxd_xpath::nodeset::Node;
 use std::fmt;
 use std::time::SystemTime;
+use crate::braille_markers::BASELINE_HIGHLIGHT;
 use crate::definitions::read_definitions_file;
 use crate::errors::*;
 use crate::prefs::*;
@@ -2648,7 +2649,7 @@ impl<'c, 's:'c, 'r, 'm:'c> SpeechRulesWithContext<'c, 's,'m> {
             if (0x2800..0x28FF).contains(&as_u32) {
                 return unsafe {char::from_u32_unchecked(as_u32 | 0xC0)};  // safe because we have checked the range
             } else if baseline_indicator_hack && ch == 'b' {
-                return '𝑏'
+                return BASELINE_HIGHLIGHT
             } else {
                 return ch;
             }

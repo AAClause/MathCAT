@@ -9,7 +9,7 @@
       replace:
       - test:
         - if: "(@class='MathML-unit' or BaseNode(.)[@class='MathML-unit']) and @data-previous-space-width >= 0.25"  # BANA 5.3(a)
-          then: [t: "𝐖"]
+          then: [t: ""]
         - else_if: "@data-previous-space-width > 1.1"
           then: [t: "⠬"]
         - else_if: "@data-previous-space-width >= 0.25"      # thickspace
@@ -17,7 +17,7 @@
       - x: "."
       - test:
         - if: "(@class='MathML-unit' or BaseNode(.)[@class='MathML-unit']) and @data-following-space-width >= 0.25" # BANA 5.3(a)
-          then: [t: "𝐖"]
+          then: [t: ""]
         - else_if: "@data-following-space-width > 1.1"
           then: [t: "⠬"]
         - else_if: "@data-following-space-width >= 0.25"      # thickspace

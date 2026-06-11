@@ -15,6 +15,7 @@ use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 use log::{debug, error};
+use crate::braille_markers::*;
 
 fn is_ueb_prefix(ch: char) -> bool {
     matches!(ch, '⠼' | '⠈' | '⠘' | '⠸' | '⠐' | '⠨' | '⠰' | '⠠')
@@ -248,11 +249,10 @@ pub fn braille_mathml(mathml: Element, nav_node_id: &str) -> Result<(String, usi
     }
 }
 
-// FIX: if 8-dot braille is needed, perhaps the highlights can be shifted to a "highlighted" 256 char block in private space 
-//   they would need to be unshifted for the external world
+// Internal baseline highlight uses private-use BASELINE_HIGHLIGHT (see braille_markers.rs).
 fn is_highlighted(ch: char) -> bool {
     let ch_as_u32 = ch as u32;
-    return (0x28C0..0x28FF).contains(&ch_as_u32) || ch == '𝑏';           // 0x28C0..0x28FF all have dots 7 & 8 on
+    return (0x28C0..0x28FF).contains(&ch_as_u32) || ch == BASELINE_HIGHLIGHT;
 }
 
 fn highlight(ch: char) -> char {
@@ -511,7 +511,7 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
     // Indicators: C: capital, N: number, P: punctuation, M: multipurpose
     // Others:
     //      W -- whitespace that should be kept (e.g, in a numeral)
-    //      𝑁 -- hack for special case of a lone decimal pt -- not considered a number but follows rules mostly 
+    //       -- hack for special case of a lone decimal pt -- not considered a number but follows rules mostly 
     // SRE doesn't have H: Hebrew or U: Russian, so not encoded (yet)
     // Note: some "positive" patterns find cases to keep the char and transform them to the lower case version
     static NEMETH_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
@@ -529,19 +529,19 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
         "U" => "⠈⠈",    // Russian
         "C" => "⠠",     // capital
         "P" => "⠸",     // punctuation
-        "𝐏" => "⠸",     // hack for punctuation after a roman numeral -- never removed
+        "" => "⠸",     // hack for punctuation after a roman numeral -- never removed
         "L" => "",      // letter
         "l" => "",      // letter inside enclosed list
         "M" => "",      // multipurpose indicator
         "m" => "⠐",     // required multipurpose indicator
         "N" => "",      // potential number indicator before digit
         "n" => "⠼",     // required number indicator before digit
-        "𝑁" => "",      // hack for special case of a lone decimal pt -- not considered a number but follows rules mostly
+        "" => "",      // hack for special case of a lone decimal pt -- not considered a number but follows rules mostly
         "W" => "⠀",     // whitespace
         "w" => "⠀",     // whitespace from comparison operator
         "," => "⠠⠀",    // comma
         "b" => "⠐",     // baseline
-        "𝑏" => "⣐",     // highlight baseline (it's a hack)
+        "" => "⣐",     // highlight baseline (it's a hack)
         "↑" => "⠘",     // superscript
         "↓" => "⠰",     // subscript
     };
@@ -564,7 +564,7 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
 
     // Hack to convert non-numeric '.' to numeric '.'
     // The problem is that the numbers are hidden inside of mover -- this might be more general than rule 99_2.
-    static DOTS_99_A_2: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"𝑁⠨mN").unwrap());
+    static DOTS_99_A_2: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"⠨mN").unwrap());
 
     // Punctuation is one or two chars. There are (currently) only 3 2-char punct chars (—‘’) -- we explicitly list them below
     static REMOVE_SPACE_BEFORE_PUNCTUATION_151: LazyLock<Regex> =
@@ -576,16 +576,16 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
     // 149 -- consecutive comparison operators have no space -- instead a multipurpose indicator is used (doesn't require a regex)
 
     // 177.2 -- add after a letter and before a digit (or decimal pt) -- digits will start with N
-    static MULTI_177_2: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([Ll].)[N𝑁]").unwrap());
+    static MULTI_177_2: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([Ll].)[N]").unwrap());
 
     // keep between numeric subscript and digit ('M' added by subscript rule)
-    static MULTI_177_3: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([N𝑁].)M([N𝑁].)").unwrap());
+    static MULTI_177_3: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([N].)M([N].)").unwrap());
 
     // Add after decimal pt for non-digits except for comma and punctuation
     // Note: since "." can be in the middle of a number, there is not necessarily a "N"
     // Although not mentioned in 177_5, don't add an 'M' before an 'm'
     static MULTI_177_5: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"([N𝑁]⠨)([^⠂⠆⠒⠲⠢⠖⠶⠦⠔N𝑁,Pm])").unwrap());
+        LazyLock::new(|| Regex::new(r"([N]⠨)([^⠂⠆⠒⠲⠢⠖⠶⠦⠔N,Pm])").unwrap());
 
     // Pattern for rule II.9a (add numeric indicator at start of line or after a space)
     // 1. start of line
@@ -625,11 +625,11 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
     static NUM_IND_9B: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?P<punct>P..?)(?P<minus>⠤?)N").unwrap());
 
     // Before 79b (punctuation)
-    static REMOVE_LEVEL_IND_BEFORE_SPACE_COMMA_PUNCT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?:[↑↓]+[b𝑏]?|[b𝑏])([Ww,P]|$)").unwrap());
+    static REMOVE_LEVEL_IND_BEFORE_SPACE_COMMA_PUNCT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?:[↑↓]+[b]?|[b])([Ww,P]|$)").unwrap());
 
     // Most commas have a space after them, but not when followed by a close quote (others?)
     static NO_SPACE_AFTER_COMMA: LazyLock<Regex> = LazyLock::new(|| Regex::new(r",P⠴").unwrap()); // captures both single and double close quote
-    static REMOVE_LEVEL_IND_BEFORE_BASELINE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?:[↑↓mb𝑏]+)([b𝑏])").unwrap());
+    static REMOVE_LEVEL_IND_BEFORE_BASELINE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?:[↑↓mb]+)([b])").unwrap());
 
     // Except for the four chars above, the unicode rules always include a punctuation indicator.
     // The cases to remove them (that seem relevant to MathML) are:
@@ -637,7 +637,7 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
     //   After a word (38.4)
     //   2nd or subsequent punctuation (includes, "-", etc) (38.7)
     static REMOVE_AFTER_PUNCT_IND: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(^|[Ww]|[Ll].[Ll].)P(.)").unwrap());
-    static REPLACE_INDICATORS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([SB𝔹TIREDGVHUP𝐏CLlMmb𝑏↑↓Nn𝑁Ww,])").unwrap());
+    static REPLACE_INDICATORS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([SB𝔹TIREDGVHUPCLlMmb↑↓NnWw,])").unwrap());
     static COLLAPSE_SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"⠀⠀+").unwrap());
 
 //   debug!("Before:  \"{}\"", raw_braille);
@@ -699,7 +699,7 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
     let mut result = REMOVE_LEVEL_IND_BEFORE_BASELINE.replace_all(&result, "$1");
 //   debug!("Punct  : \"{}\"", &result);
     // checks for punctuation char, so needs to before punctuation is stripped.
-    // if '𝑏' is removed, then the highlight needs to be shifted to the left in some cases
+    // if '' is removed, then the highlight needs to be shifted to the left in some cases
     let result = remove_baseline_before_space_or_punctuation(&mut result);
 //   debug!("Removed: \"{}\"", &result);
 
@@ -743,8 +743,8 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
         let highlight_style = PreferenceManager::get().borrow().pref_to_string("BrailleNavHighlight");
         if highlight_style == "EndPoints" &&
             let Some(last_highlighted) = braille.rfind(is_highlighted) &&
-            braille[last_highlighted..].starts_with('𝑏') {
-                    let i_after_baseline = last_highlighted + '𝑏'.len_utf8();
+            braille[last_highlighted..].starts_with(BASELINE_HIGHLIGHT) {
+                    let i_after_baseline = last_highlighted + BASELINE_HIGHLIGHT.len_utf8();
                     if i_after_baseline == braille.len() || braille[i_after_baseline..].starts_with(['W', 'w', ',', 'P']) {
                         // shift the highlight to the left after doing just the replacement (if any) that the regex below does
                         // the shift runs until a non blank braille char is found
@@ -757,7 +757,7 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
                                 break;
                             }
                         }
-                        braille.to_mut().replace_range(last_highlighted-bytes_deleted..last_highlighted+'𝑏'.len_utf8(),
+                        braille.to_mut().replace_range(last_highlighted-bytes_deleted..last_highlighted+BASELINE_HIGHLIGHT.len_utf8(),
                                                         &char_to_highlight);
                     }
                 }
@@ -771,7 +771,7 @@ fn nemeth_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
 // Indicators: C: capital, N: number, P: punctuation, M: multipurpose
 // Others:
 //      W -- whitespace that should be kept (e.g, in a numeral)
-//      𝑁 -- hack for special case of a lone decimal pt -- not considered a number but follows rules mostly 
+//       -- hack for special case of a lone decimal pt -- not considered a number but follows rules mostly 
 // Note: some "positive" patterns find cases to keep the char and transform them to the lower case version
 static UEB_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
     "S" => "XXX",    // sans-serif -- from prefs
@@ -790,11 +790,11 @@ static UEB_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
     // "H" => "⠠⠠",  // Hebrew
     // "U" => "⠈⠈",  // Russian
     "C" => "⠠",      // capital
-    "𝐶" => "⠠",      // capital that never should get word indicator (from chemical element)
+    "" => "⠠",      // capital that never should get word indicator (from chemical element)
     "N" => "⠼",     // number indicator
     "t" => "⠱",     // shape terminator
     "W" => "⠀",     // whitespace
-    "𝐖"=> "⠀",     // whitespace (hard break -- basically, it separates exprs)
+    ""=> "⠀",     // whitespace (hard break -- basically, it separates exprs)
     "s" => "⠆",     // typeface single char indicator
     "w" => "⠂",     // typeface word indicator
     "e" => "⠄",     // typeface & capital terminator 
@@ -839,7 +839,7 @@ static SHORT_FORMS: phf::Set<&str> = phf_set! {
 };
 
 fn is_letter_prefix(ch: char) -> bool {
-    matches!(ch, 'B' | 'I' | '𝔹' | 'S' | 'T' | 'D' | 'C' | '𝐶' | '𝑐')
+    matches!(ch, 'B' | 'I' | '𝔹' | 'S' | 'T' | 'D' | 'C' | '' | '')
 }
 
 // Trim braille spaces before and after braille indicators
@@ -847,7 +847,7 @@ fn is_letter_prefix(ch: char) -> bool {
 // Note: fraction over is not listed due to example 42(4) which shows a space before the "/"
 // static ref REMOVE_SPACE_BEFORE_BRAILLE_INDICATORS: Regex =
 //     Regex::new(r"(⠄⠄⠄|⠤⠤⠤)W+([⠼⠸⠪])").unwrap();
-static REPLACE_INDICATORS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([1𝟙SB𝔹TIREDGVHP𝐶𝑐CLMNW𝐖swe,.-—―#ocb])").unwrap());
+static REPLACE_INDICATORS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([1𝟙SB𝔹TIREDGVHPCLMNWswe,.-—―#ocb])").unwrap());
 static COLLAPSE_SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"⠀⠀+").unwrap());
 
 fn is_short_form(chars: &[char]) -> bool {
@@ -862,8 +862,8 @@ fn ueb_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> Str
 
     let use_only_grade1 = pref_manager.pref_to_string("UEB_START_MODE").as_str() == "Grade1";
     
-    // '𝐖' is a hard break -- basically, it separates exprs
-    let mut result = result.split('𝐖')
+    // '' is a hard break -- basically, it separates exprs
+    let mut result = result.split('')
                         .map(|str| pick_start_mode(str, use_only_grade1) + "W")
                         .collect::<String>();
     result.pop();   // we added a 'W' at the end that needs to be removed.
@@ -939,7 +939,7 @@ fn ueb_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> Str
 
             // look CL or CCL for caps (CC runs until we get whitespace)
             // if we find an L not in caps mode, we return false
-            // Note: caps can be C𝐶, whitespace can be W𝐖
+            // Note: caps can be C, whitespace can be W
             while let Some(ch) = chars.next() {
                 if ch == 'L' {
                     if !is_cap_mode {
@@ -949,7 +949,7 @@ fn ueb_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> Str
                     if cap_mode == UEB_Duration::Symbol {
                         is_cap_mode = false;
                     }
-                } else if ch == 'C' || ch == '𝐶' {
+                } else if ch == 'C' || ch == '' {
                     if is_cap_mode {
                         if cap_mode == UEB_Duration::Symbol {
                             cap_mode = UEB_Duration::Word;
@@ -959,7 +959,7 @@ fn ueb_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> Str
                         cap_mode = UEB_Duration::Symbol;
                     }
                     n_caps += 1;
-                } else if ch == 'W' || ch == '𝐖' {
+                } else if ch == 'W' || ch == '' {
                     if is_cap_mode {
                         assert!(cap_mode == UEB_Duration::Word);
                     }
@@ -972,7 +972,7 @@ fn ueb_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> Str
         }
 
         fn convert_to_cap_passage_mode(braille: &str) -> String {
-            return "⠠⠠⠠".to_string() + &braille.replace(['C', '𝐶'], "") + "⠠⠄";
+            return "⠠⠠⠠".to_string() + &braille.replace(['C', ''], "") + "⠠⠄";
         }
 
         /// Return true if the BANA or ICEB guidelines say it is ok to start with grade 2
@@ -999,7 +999,7 @@ fn ueb_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> Str
                         return false;
                     }
                     found_g1 = true;
-                } else if !"𝐶CLobc".contains(ch) {
+                } else if !"CLobc".contains(ch) {
                     if n_real_chars == 2 {
                         i += 1;
                         break;              // this is the third real char
@@ -1043,7 +1043,7 @@ fn ueb_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> Str
                 // this will be 'N' followed by LETTER_NUMBERS or the number ".", ",", or " "
                 for j in (0..i).rev() {
                     let ch = chars[j];
-                    if !(is_letter_number(unhighlight(ch)) || ".,W𝐖".contains(ch)) {
+                    if !(is_letter_number(unhighlight(ch)) || ".,W".contains(ch)) {
                         return ch == 'N'
                     }
                 }
@@ -1053,7 +1053,7 @@ fn ueb_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> Str
 
         fn is_single_letter_on_right(chars: &[char], i: usize) -> bool {
             fn is_skip_char(ch: char) -> bool {
-                matches!(ch, 'B' | 'I' | '𝔹' | 'S' | 'T' | 'D' | 'C' | '𝐶' | 's' | 'w')
+                matches!(ch, 'B' | 'I' | '𝔹' | 'S' | 'T' | 'D' | 'C' | '' | 's' | 'w')
             }
 
             // find the first char (if any)
@@ -1136,7 +1136,7 @@ fn typeface_to_word_mode(braille: &str) -> String {
         } else if ch == 'L' || ch == 'N' {
             result.push(chars[i]);
             result.push(chars[i+1]);
-            if !word_mode_end.is_empty() && i+2 < chars.len() && !(chars[i+2] == 'W'|| chars[i+2] == '𝐖') {
+            if !word_mode_end.is_empty() && i+2 < chars.len() && !(chars[i+2] == 'W'|| chars[i+2] == '') {
                 // add terminator unless word sequence is terminated by end of string or whitespace
                 for &ch in &word_mode_end {
                     result.push(ch);
@@ -1166,10 +1166,10 @@ fn capitals_to_word_mode(braille: &str) -> String {
     while i < chars.len() {
         let ch = chars[i];
         if ch == 'C' {
-            // '𝑐' should only occur after a 'C', so we don't have top-level check for it
+            // '' should only occur after a 'C', so we don't have top-level check for it
             let mut next_non_cap = i+1;
-            while let Some(i_next) = find_next_char(&chars[next_non_cap..], '𝑐') {
-                next_non_cap += i_next + 1; // C/𝑐, L, letter
+            while let Some(i_next) = find_next_char(&chars[next_non_cap..], '') {
+                next_non_cap += i_next + 1; // C/, L, letter
             }
             if find_next_char(&chars[next_non_cap..], 'C').is_some() { // next letter sequence "C..."
                 if is_next_char_start_of_section_12_modifier(&chars[next_non_cap+1..]) {
@@ -1308,7 +1308,7 @@ enum UEB_Duration {
 
 // used to determine standing alone (on left side)
 fn is_left_intervening_char(ch: char) -> bool {
-    matches!(ch, 'B' | 'I' | '𝔹' | 'S' | 'T' | 'D' | 'C' | '𝐶' | 's' | 'w')
+    matches!(ch, 'B' | 'I' | '𝔹' | 'S' | 'T' | 'D' | 'C' | '' | 's' | 'w')
 }
 
 /// Return value for use_g1_word_mode()
@@ -1395,7 +1395,7 @@ fn remove_unneeded_mode_changes(raw_braille: &str, start_mode: UEB_Mode, start_d
                         // moving out of numeric mode
                         result.push(ch);
                         i += 1;
-                        if "W𝐖-—―".contains(ch) {
+                        if "W-—―".contains(ch) {
                             mode = start_mode;
                             if mode == UEB_Mode::Grade2 {
                                 start_g2_letter = None;        // will be set to real letter
@@ -1440,7 +1440,7 @@ fn remove_unneeded_mode_changes(raw_braille: &str, start_mode: UEB_Mode, start_d
                         mode = UEB_Mode::Numeric;
                         duration = UEB_Duration::Word;
                     },
-                    'W' | '𝐖' => {
+                    'W' | '' => {
                         // this terminates a word mode if there was one
                         result.push(ch);
                         i += 1;
@@ -1557,7 +1557,7 @@ fn remove_unneeded_mode_changes(raw_braille: &str, start_mode: UEB_Mode, start_d
             },
         }
 
-        if (ch == 'W' || ch == '𝐖') && g1_word_indicator != Grade1WordIndicator::NotInChars &&
+        if (ch == 'W' || ch == '') && g1_word_indicator != Grade1WordIndicator::NotInChars &&
            (mode == UEB_Mode::Grade2 || duration == UEB_Duration::Symbol) {
             g1_word_indicator = use_g1_word_mode(&chars[i..]);
             if g1_word_indicator == Grade1WordIndicator::InWord {
@@ -1580,7 +1580,7 @@ fn remove_unneeded_mode_changes(raw_braille: &str, start_mode: UEB_Mode, start_d
     fn use_g1_word_mode(chars: &[char]) -> Grade1WordIndicator {
         // debug!("use_g1_word_mode: chars='{:?}'", chars);
         for &ch in chars {
-            if ch == 'W' || ch == '𝐖' {
+            if ch == 'W' || ch == '' {
                 return Grade1WordIndicator::NotInWord;       // reached a word boundary
             }
             if ch == '𝟙' {
@@ -1637,7 +1637,7 @@ fn stands_alone(chars: &[char], i: usize) -> (bool, &[char], usize) {
             } else if is_left_intervening_char(ch) {
                 intervening_chars_mode = true;
             } else {
-                return "W𝐖-—―".contains(ch);
+                return "W-—―".contains(ch);
             }
         }
 
@@ -1648,7 +1648,7 @@ fn stands_alone(chars: &[char], i: usize) -> (bool, &[char], usize) {
     fn right_side_stands_alone(chars: &[char]) -> (bool, usize, usize) {
         // see RUEB 2.6.3
         fn is_right_intervening_char(ch: char) -> bool {
-            matches!(ch, 'B' | 'I' | '𝔹' | 'S' | 'T' | 'D' | 'C' | '𝐶' | 's' | 'w' | 'e')
+            matches!(ch, 'B' | 'I' | '𝔹' | 'S' | 'T' | 'D' | 'C' | '' | 's' | 'w' | 'e')
         }
         // scan forward to skip letters and intervening chars
         // once we hit an intervening char, only intervening chars are allowed if standing alone ('c' and 'b' are part of them)
@@ -1666,7 +1666,7 @@ fn stands_alone(chars: &[char], i: usize) -> (bool, &[char], usize) {
             } else if is_right_intervening_char(ch) {  
                 intervening_chars_mode = true;
             } else {
-                return if "W𝐖-—―".contains(ch) {(true, n_letters, i)} else {(false, n_letters, i)};
+                return if "W-—―".contains(ch) {(true, n_letters, i)} else {(false, n_letters, i)};
             }
             i += 1;
         }
@@ -1799,12 +1799,12 @@ static VIETNAM_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
     // "H" => "⠠⠠",    // Hebrew
     // "U" => "⠈⠈",    // Russian
     "C" => "⠨",      // capital
-    "𝑐" => "",       // second or latter braille cell of a capital letter
-    "𝐶" => "⠨",      // capital that never should get word indicator (from chemical element)
+    "" => "",       // second or latter braille cell of a capital letter
+    "" => "⠨",      // capital that never should get word indicator (from chemical element)
     "N" => "⠼",     // number indicator
     "t" => "⠱",     // shape terminator
     "W" => "⠀",     // whitespace"
-    "𝐖"=> "⠀",     // whitespace
+    ""=> "⠀",     // whitespace
     "s" => "⠆",     // typeface single char indicator
     "w" => "",     // typeface word indicator
     "e" => "",     // typeface & capital terminator 
@@ -1831,7 +1831,7 @@ fn vietnam_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) ->
     static UU_O_RULE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"L(⠥|⠳)(L[⠔⠰⠢⠤⠠])L(⠪|⠹)").unwrap()); // uo, ưo rule
     static UYE_RULE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"L⠥L([⠔⠰⠢⠤⠠])L⠽L⠣").unwrap()); // uo, ưo rule
     static UY_RULE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"L⠥L([⠔⠰⠢⠤⠠])L⠽").unwrap()); // uo, ưo rule
-    static REPLACE_INDICATORS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([1𝟙SB𝔹TIREDGVHP𝐶𝑐CLMNW𝐖swe,.-—―#ocb!])").unwrap());
+    static REPLACE_INDICATORS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([1𝟙SB𝔹TIREDGVHPCLMNWswe,.-—―#ocb!])").unwrap());
     // debug!("vietnam_cleanup: start={}", raw_braille);
     let result = typeface_to_word_mode(&raw_braille);
     let result = capitals_to_word_mode(&result);
@@ -1903,13 +1903,13 @@ static CMU_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
     // "H" => "⠠⠠",    // Hebrew
     // "U" => "⠈⠈",    // Russian
     "C" => "⠨",      // capital
-    "𝐶" => "⠨",      // capital that never should get word indicator (from chemical element)
+    "" => "⠨",      // capital that never should get word indicator (from chemical element)
     "N" => "⠼",     // number indicator
-    "𝑁" => "",      // continue number
+    "" => "",      // continue number
     // "t" => "⠱",     // shape terminator
     "W" => "⠀",     // whitespace"
-    "𝐖"=> "⠀",     // whitespace
-    // "𝘄" => "⠀",    // add whitespace if char to the left has dots 1, 2, or 3 -- special rule handled separately, so commented out
+    ""=> "⠀",     // whitespace
+    // "" => "⠀",    // add whitespace if char to the left has dots 1, 2, or 3 -- special rule handled separately, so commented out
     "s" => "",     // typeface single char indicator
     // "w" => "⠂",     // typeface word indicator
     // "e" => "⠄",     // typeface & capital terminator 
@@ -1926,7 +1926,7 @@ static CMU_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
 
 
 fn cmu_cleanup(_pref_manager: Ref<PreferenceManager>, raw_braille: String) -> String {
-    static ADD_WHITE_SPACE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"𝘄(.)|𝘄$").unwrap());
+    static ADD_WHITE_SPACE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(.)|$").unwrap());
 
     // debug!("cmu_cleanup: start={}", raw_braille);
     // let result = typeface_to_word_mode(&raw_braille);
@@ -1945,7 +1945,7 @@ fn cmu_cleanup(_pref_manager: Ref<PreferenceManager>, raw_braille: String) -> St
     // debug!("Before remove mode changes: '{}'", &result);
     // This reuses the code just for getting rid of unnecessary "L"s and "N"s
     let result = remove_unneeded_mode_changes(&result, UEB_Mode::Grade1, UEB_Duration::Passage);
-    let result = result.replace("𝑁N", "");
+    let result = result.replace("N", "");
     // debug!(" After remove mode changes: '{}'", &result);
 
     let result = REPLACE_INDICATORS.replace_all(&result, |cap: &Captures| {
@@ -1995,12 +1995,12 @@ static SWEDISH_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
     // "H" => "⠠⠠",    // Hebrew
     // "U" => "⠈⠈",    // Russian
     "C" => "⠠",      // capital
-    "𝑐" => "",       // second or latter braille cell of a capital letter
-    "𝐶" => "⠠",      // capital that never should get word indicator (from chemical element)
+    "" => "",       // second or latter braille cell of a capital letter
+    "" => "⠠",      // capital that never should get word indicator (from chemical element)
     "N" => "⠼",     // number indicator
     "t" => "⠱",     // shape terminator
     "W" => "⠀",     // whitespace"
-    "𝐖"=> "⠀",     // whitespace
+    ""=> "⠀",     // whitespace
     "w" => "⠀",     // whitespace after function name
     "s" => "",     // typeface single char indicator
     "e" => "",     // typeface & capital terminator 
@@ -2035,13 +2035,13 @@ static FINNISH_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
     // "H" => "⠠⠠",    // Hebrew
     // "U" => "⠈⠈",    // Russian
     "C" => "⠠",      // capital
-    "𝑐" => "",       // second or latter braille cell of a capital letter
-    "𝐶" => "⠠",      // capital that never should get whitespace in front (from chemical element)
+    "" => "",       // second or latter braille cell of a capital letter
+    "" => "⠠",      // capital that never should get whitespace in front (from chemical element)
     "N" => "⠼",     // number indicator
     "n" => "⠼",     // number indicator for drop numbers (special case with close parens)
     "t" => "⠱",     // shape terminator
     "W" => "⠀",     // whitespace"
-    "𝐖"=> "⠀",     // whitespace
+    ""=> "⠀",     // whitespace
     "s" => "⠆",     // typeface single char indicator
     "w" => "",     // typeface word indicator
     "e" => "",     // typeface & capital terminator 
@@ -2060,16 +2060,16 @@ static FINNISH_INDICATOR_REPLACEMENTS: phf::Map<&str, &str> = phf_map! {
 };
 
 fn finnish_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> String {
-    static REPLACE_INDICATORS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([SB𝔹TIREDGVHUP𝐏C𝐶LlMmb↑↓Nn𝑁WwZ,()])").unwrap());
+    static REPLACE_INDICATORS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([SB𝔹TIREDGVHUPCLlMmb↑↓NnWwZ,()])").unwrap());
     // Numbers need to end with a space, but sometimes there is one there for other reasons
     static DROP_NUMBER_SEPARATOR: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(n.)\)").unwrap());
-    static NUMBER_MATCH: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"((N.)+[^WN𝐶#↑↓Z])").unwrap());
+    static NUMBER_MATCH: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"((N.)+[^WN#↑↓Z])").unwrap());
 
     // debug!("finnish_cleanup: start={}", raw_braille);
     let result = DROP_NUMBER_SEPARATOR.replace_all(&raw_braille, |cap: &Captures| {
         // match includes the char after the number -- insert the whitespace before it
         // debug!("DROP_NUMBER_SEPARATOR match='{}'", &cap[1]);
-        return cap[1].to_string() + "𝐶)";       // hack to use "𝐶" instead of dot 6 directly, but works for NUMBER_MATCH
+        return cap[1].to_string() + ")";       // hack to use "" instead of dot 6 directly, but works for NUMBER_MATCH
     });
     let result = result.replace('n', "N");  // avoids having to modify remove_unneeded_mode_changes()
     let result = NUMBER_MATCH.replace_all(&result, |cap: &Captures| {
@@ -2123,7 +2123,7 @@ fn finnish_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) ->
 fn swedish_cleanup(pref_manager: Ref<PreferenceManager>, raw_braille: String) -> String {
     // FIX: need to implement this -- this is just a copy of the Vietnam code
     // Empty bases are ok if they follow whitespace
-    static EMPTY_BASE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(^|[W𝐖w])E").unwrap());
+    static EMPTY_BASE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(^|[Ww])E").unwrap());
     // debug!("swedish_cleanup: start={}", raw_braille);
     let result = typeface_to_word_mode(&raw_braille);
     let result = capitals_to_word_mode(&result);
@@ -2172,7 +2172,7 @@ fn LaTeX_cleanup(_pref_manager: Ref<PreferenceManager>, raw_braille: String) -> 
     static REMOVE_SPACE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r" ([\^_,;)\]}])").unwrap()); // '^', '_', ',', ';', ')', ']', '}'
     static COLLAPSE_SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r" +").unwrap());
     // debug!("LaTeX_cleanup: start={}", raw_braille);
-    let result = raw_braille.replace('𝐖', " ");
+    let result = raw_braille.replace(WHITESPACE_HARD, " ");
     // let result = COLLAPSE_SPACES.replace_all(&raw_braille, "⠀");
     let result = COLLAPSE_SPACES.replace_all(&result, " ");
     // debug!("After collapse: {}", &result);
@@ -2190,13 +2190,13 @@ fn ASCIIMath_cleanup(_pref_manager: Ref<PreferenceManager>, raw_braille: String)
     static REMOVE_SPACE_AFTER_OP: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"([^\^_,;)\]}\w\d"]) +([\w\d])"#).unwrap());
     static COLLAPSE_SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r" +").unwrap());
     // debug!("ASCIIMath_cleanup: start={}", raw_braille);
-    let result  = raw_braille.replace("|𝐖__|", "|𝐰__|");    // protect the whitespace to prevent misinterpretation as lfloor
-    let result = result.replace('𝐖', " ");
+    let result  = raw_braille.replace(&format!("|{WHITESPACE_HARD}__|"), &format!("|{WHITESPACE_SOFT}__|"));    // protect the whitespace to prevent misinterpretation as lfloor
+    let result = result.replace(WHITESPACE_HARD, " ");
     let result = COLLAPSE_SPACES.replace_all(&result, " ");
     // debug!("After collapse: {}", &result);
     let result = REMOVE_SPACE_BEFORE_OP.replace_all(&result, "$1$2");
     let result = REMOVE_SPACE_AFTER_OP.replace_all(&result, "$1$2");
-    let result = result.replace('𝐰', " ");     // spaces around relational operators
+    let result = result.replace(WHITESPACE_SOFT, " ");     // spaces around relational operators
     let result = COLLAPSE_SPACES.replace_all(&result, " ");
     // debug!("After remove: {}", &result);
     // let result = result.trim_matches('⠀');
@@ -3164,5 +3164,26 @@ mod tests {
         let braille = get_braille("")?;
         assert_eq!("⠭⠔⠝", braille, "Grade1");
         return Ok( () );
+    }
+
+    /// NVDA #20319: MathML mtext with mathematical italic letters must not panic during Nemeth braille cleanup.
+    #[test]
+    fn nemeth_mtext_mathematical_alphanumeric() -> Result<()> {
+        let mathml_str = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mtext>&#x1D44E; &#x1D44F;&gt;=0</mtext></math>";
+        crate::interface::set_rules_dir(super::super::abs_rules_dir_path()).unwrap();
+        set_mathml(mathml_str).unwrap();
+        set_preference("BrailleCode", "Nemeth").unwrap();
+        set_preference("BrailleNavHighlight", "EndPoints").unwrap();
+        let braille = get_braille("")?;
+        assert!(!braille.is_empty());
+        return Ok(());
+    }
+
+    /// NVDA #20319: internal baseline marker must not collide with mathematical italic b.
+    #[test]
+    fn nvda_20319_baseline_marker_not_user_b() {
+        use crate::braille_markers::BASELINE_HIGHLIGHT;
+        assert_ne!(BASELINE_HIGHLIGHT, '\u{1D44F}');
+        assert_eq!(BASELINE_HIGHLIGHT, '\u{F8E2}');
     }
 }

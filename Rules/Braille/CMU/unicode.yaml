@@ -111,12 +111,12 @@
  - "B":                         # 0x42 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠃"]
+        then: [t: "L⠃"]
         else: [t: "CL⠃"]
  - "C":                         # 0x43 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠉"]
+        then: [t: "L⠉"]
         else: [t: "CL⠉"]
  - "D": [t: "CL⠙"]              # 0x44 
  - "E": [t: "CL⠑"]              # 0x45 
@@ -125,64 +125,64 @@
  - "H":                         # 0x48 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠓"]
+        then: [t: "L⠓"]
         else: [t: "CL⠓"]
  - "I":                         # 0x49 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠊"]
+        then: [t: "L⠊"]
         else: [t: "CL⠊"]
  - "J": [t: "CL⠚"]              # 0x4a 
  - "K":                         # 0x4b 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠅"]
+        then: [t: "L⠅"]
         else: [t: "CL⠅"]
  - "L": [t: "CL⠇"]              # 0x4c 
  - "M": [t: "CL⠍"]              # 0x4d 
  - "N":                         # 0x4e 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠝"]
+        then: [t: "L⠝"]
         else: [t: "CL⠝"]
  - "O":                         # 0x4f 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠕"]
+        then: [t: "L⠕"]
         else: [t: "CL⠕"]
  - "P":                         # 0x50 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠏"]
+        then: [t: "L⠏"]
         else: [t: "CL⠏"]
  - "Q": [t: "CL⠟"]              # 0x51 
  - "R": [t: "CL⠗"]              # 0x52 
  - "S":                         # 0x53 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠎"]
+        then: [t: "L⠎"]
         else: [t: "CL⠎"]
  - "T": [t: "CL⠞"]              # 0x54 
  - "U":                         # 0x55 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠥"]
+        then: [t: "L⠥"]
         else: [t: "CL⠥"]
  - "V":                         # 0x56 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠧"]
+        then: [t: "L⠧"]
         else: [t: "CL⠧"]
  - "W":                         # 0x57 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠺"]
+        then: [t: "L⠺"]
         else: [t: "CL⠺"]
  - "X": [t: "CL⠭"]              # 0x58 
  - "Y":                         # 0x59 
     - test:
         if: "@data-chem-element"
-        then: [t: "𝐶L⠽"]
+        then: [t: "L⠽"]
         else: [t: "CL⠽"]
  - "Z": [t: "CL⠵"]              # 0x5a 
 
@@ -299,7 +299,7 @@
 #  - "⊢": [t: "⠸⠒"]               # 0x22a2 (Right tack)
 #  - "⊣": [t: "⠈⠸⠒"]              # 0x22a3 (Left tack)
  - "−": [t: "⠐⠤"]               # 0x2212 (Minus sign)
- - "·": [t: "⠠𝘄"]               # 0x00B7 (Multiplication dot (times))
+ - "·": [t: "⠠"]               # 0x00B7 (Multiplication dot (times))
 #  - "∗": [t: "⠐⠔"]               # 0x2217 (Asterisk operator)
  - "∘": [t: "⠠⠆"]               # 0x2218 (Ring operator)  value based on last row in 5.1 (probably what they should have used)
  - "◦": [t: "⠠⠆"]               # 0x25E6 (White bullet) (value based on 2218)
@@ -729,7 +729,7 @@
  - "⟨": [t: "⠐⠅"]                # 0x27E8 (Mathematical left angle bracket)
  - "⟩": [t: "⠨⠂"]                # 0x27E9 (Mathematical right angle bracket)
  - "}": [t: "⠸⠂"]                # 0x007D (cerrar llaves)
- - "|": [t: "⠸𝘄"]                # 0x007C (barra vertical)
+ - "|": [t: "⠸"]                # 0x007C (barra vertical)
  - "{": [t: "⠐⠇"]                # 0x007B (abrir llaves)
  - "\\": [t: "⠐⠄"]               # 0x005C (barra inversa)
  - ";": [t: "⠀⠆"]                # 0x003B (punto y coma de separación)
